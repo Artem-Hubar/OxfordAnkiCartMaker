@@ -24,6 +24,14 @@ public class Word {
         return meaning;
     }
 
+    @Override
+    public String toString() {
+        return "Word{" +
+                "word='" + word + '\'' +
+                ", meaning=" + meaning +
+                '}';
+    }
+
     public void setMeaning(Map<String, ArrayList<String>> meaning) {
         this.meaning = meaning;
     }

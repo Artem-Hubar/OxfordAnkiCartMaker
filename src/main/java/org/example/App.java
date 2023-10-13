@@ -5,8 +5,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.jsoup.Connection;
-import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -16,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -31,87 +30,73 @@ public class App {
 
             Sheet sheet = workbook.getSheetAt(0); // 0 - индекс листа, если у вас есть несколько листов
             Scanner sc = new Scanner(System.in);
-
+            ArrayList<Word> words = new ArrayList<>();
+//            получение слов из xmls
             for (Row row : sheet) {
                 for (Cell cell : row) {
-
                         switch (cell.getCellType()) {
                             case STRING:
-                                getWord(cell.getStringCellValue().trim().toLowerCase());
+//                              заполнение информации о словах
+                                words.add(fillWord(cell.getStringCellValue().trim().toLowerCase()));
                                 break;
                         }
-                        System.out.println("Перейти к следующему слову?");
-                    while (!sc.nextLine().trim().equals("")){
-
-                    }
                 }
             }
+            System.out.println(words);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static void getWord(String stringCellValue) throws IOException {
-        Document doc = isFound(stringCellValue);
+    private static Word fillWord(String stringCellValue) throws IOException {
+        Word word = new Word();
+        word.setWord(stringCellValue);
+        Map<String,ArrayList<String>> meaning = new HashMap<>();
+        Document doc = getDoc(stringCellValue);
         Element entryContent = doc.getElementById("entryContent");
         Element mean = entryContent.child(0).child(1);
 //        Заполняем информацию о искомом Слове
-        Word word = new Word();
-        word.setWord(stringCellValue);
-        Element examplesElement  = null;
-        ArrayList<String> meaning = new ArrayList<>();
         switch (mean.className()){
             case "sense_single":{
                 Element single_mean = mean.child(0);
-                meaning.add(entryContent.getElementsByClass("webtop").first().getElementsByClass("grammar").text() + single_mean.getElementsByClass("def").text());
-                examplesElement  = single_mean;
-            } default:{
+                String meanSentence = entryContent.getElementsByClass("webtop").first().getElementsByClass("grammar").text() + single_mean.getElementsByClass("def").text();
+                meaning.put(meanSentence ,  addSample(single_mean));
+                System.out.println(meanSentence);
+                break;
+            } default: {
                 Elements different_mean = mean.children();
                 for (Element e : different_mean) {
                     if (!e.className().equals("collapse")) {
-                        meaning.add(e.getElementsByClass("grammar").text() + e.getElementsByClass("def").text());
-                        examplesElement  = e;
-
+                        String meanSentence = e.getElementsByClass("grammar").text() + e.getElementsByClass("def").text();
+                        System.out.println(meanSentence);
+                        meaning.put(meanSentence,addSample(e));
                     }
                 }
             }
         }
-
-
-
-        System.out.println(word.getWord());
-        ArrayList<String> samples = new ArrayList<>();
-
-
-
-
-
-
-
-
-
-        if (examplesElement != null) {
-            System.out.println(examplesElement);
-            Elements examples = examplesElement.children();
-            for (Element example : examples) {
-                if (example.children() != null) {
-                    StringBuffer sb = new StringBuffer();
-                    for(Element childElement : example.children()){
-                        sb.append(childElement.text() +" ");
-
-                    }
-                    System.out.println(sb);
-                }else {
-                    Element childElement = example.child(0);
-                    String sample = childElement.text();
-                    System.out.println(sample);
-                }
-            }
-        }
+        word.setMeaning(meaning);
+        return word;
     }
 
-    private static Document isFound(String stringCellValue) throws IOException {
+    private static ArrayList<String> addSample(Element e) {
+        ArrayList<String> samples = new ArrayList<>();
+
+//        проверка на несколько несколько примеров
+        try {
+            Elements examples = e.getElementsByClass("examples").first().children();
+            for (Element example : examples){
+                samples.add(example.text());
+            }
+        }catch (NullPointerException exception){
+//            случай на наличие всего одного примера
+            Elements example = e.getElementsByClass("examples");
+            samples.add(example.text());
+        }
+        return samples;
+    }
+
+    private static Document getDoc(String stringCellValue) throws IOException {
         String url = "https://www.oxfordlearnersdictionaries.com/spellcheck/english/?q=" + stringCellValue;
         Document doc = Jsoup.connect(url).get();
         if (!doc.getElementsByClass("result-list").isEmpty()) {
@@ -119,4 +104,8 @@ public class App {
         }
         return doc;
     }
+
+
+
+
 }
