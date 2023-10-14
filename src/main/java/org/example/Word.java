@@ -1,8 +1,6 @@
 package org.example;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Word {
     private String word;
@@ -35,4 +33,39 @@ public class Word {
     public void setMeaning(Map<String, ArrayList<String>> meaning) {
         this.meaning = meaning;
     }
+
+
+    public class AllMeaningValuesIterator implements Iterator<String> {
+        private Iterator<ArrayList<String>> listIterator;
+        private Iterator<String> valueIterator;
+
+        public AllMeaningValuesIterator() {
+            listIterator = meaning.values().iterator();
+            valueIterator = new ArrayList<String>().iterator(); // Изначально пустой
+        }
+
+        @Override
+        public boolean hasNext() {
+            while ((valueIterator == null || !valueIterator.hasNext()) && listIterator.hasNext()) {
+                valueIterator = listIterator.next().iterator();
+            }
+            return valueIterator != null && valueIterator.hasNext();
+        }
+
+        @Override
+        public String next() {
+            if (hasNext()) {
+                return valueIterator.next();
+            } else {
+                throw new NoSuchElementException();
+            }
+        }
+    }
+
+    // Метод для получения итератора для всех значений
+    public Iterator<String> getAllMeaningValuesIterator() {
+        return new AllMeaningValuesIterator();
+    }
+
+
 }

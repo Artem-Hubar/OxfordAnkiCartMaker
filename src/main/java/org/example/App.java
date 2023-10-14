@@ -13,10 +13,7 @@ import org.jsoup.select.Elements;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Hello world!
@@ -42,15 +39,39 @@ public class App {
                         }
                 }
             }
-            System.out.println(words);
-
+            for (Word word : words){
+                getCartWord(word);
+                
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private static ArrayList<CartWord> getCartWord(Word word) {
+        ArrayList<CartWord> arrayList = new ArrayList<>();
+        Map<String,ArrayList<String>> meaning = word.getMeaning();
+
+        for(String m : meaning.keySet()){
+            CartWord cartWord = new CartWord();
+            StringBuffer sb = new StringBuffer();
+            sb.append(word.getWord()).append("\n");
+            for(String sample : meaning.get(m)){
+                sb.append(sample).append("\n");
+            }
+            cartWord.setText(sb.toString());
+            cartWord.setBackView(m);
+            cartWord.setWord(word.getWord());
+            cartWord.setQuestion("Что значит слово?");
+            arrayList.add(cartWord);
+        }
+
+        return arrayList;
+    }
+
     private static Word fillWord(String stringCellValue) throws IOException {
         Word word = new Word();
+        LinkedList<String > list = new LinkedList<>();
         word.setWord(stringCellValue);
         Map<String,ArrayList<String>> meaning = new HashMap<>();
         Document doc = getDoc(stringCellValue);
@@ -62,14 +83,12 @@ public class App {
                 Element single_mean = mean.child(0);
                 String meanSentence = entryContent.getElementsByClass("webtop").first().getElementsByClass("grammar").text() + single_mean.getElementsByClass("def").text();
                 meaning.put(meanSentence ,  addSample(single_mean));
-                System.out.println(meanSentence);
                 break;
             } default: {
                 Elements different_mean = mean.children();
                 for (Element e : different_mean) {
                     if (!e.className().equals("collapse")) {
                         String meanSentence = e.getElementsByClass("grammar").text() + e.getElementsByClass("def").text();
-                        System.out.println(meanSentence);
                         meaning.put(meanSentence,addSample(e));
                     }
                 }
