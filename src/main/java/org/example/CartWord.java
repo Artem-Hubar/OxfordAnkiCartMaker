@@ -1,6 +1,6 @@
 package org.example;
 
-public class CartWord {
+public abstract class CartWord {
     private String Text;
     private  String backView;
     private String Question;
